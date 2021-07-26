@@ -10,4 +10,4 @@ first use the make command to create the "vcc" compiler, the vcc compiler expect
 After running the compiler with the desired input file, the output file you have entered will be a .c file which can be compiled and run.
 
 ## Vector Language
-Please refer to the pdf file in the Repositry (hebrew).
+Please refer to the pdf file in the repositry, file name is vlang.pdf .
