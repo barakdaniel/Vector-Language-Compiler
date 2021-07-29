@@ -98,6 +98,11 @@ expr				: term									{ ; }
 															  else { strcpy($$, "("); strcat($$, $2); strcat($$, ")"); } }
 					| expr comma expr						{ if(isVector($1)) {fprintf(yyout, "\tprintVec(%s, %s);\n", $1, getVecSize($1)); strcpy($$, $3);}
 															  else { fprintf(yyout, "\tprintf(\"%%d\\n\", %s);\n", $1);} strcpy($$, $3);}
+					| op term								{ if(isVector($2)) { opBuffer[0] = '\0'; strcpy(opBuffer, "vectorOpScalar("); strcat(opBuffer, $2); strcat(opBuffer, ", "); 
+															  strcat(opBuffer, getVecSize($2)); strcat(opBuffer, ", -1, '"); strcat(opBuffer, "*"); strcat(opBuffer, "')"); strcpy($$, createTmpVec(getVecSize($2))); }
+															  else { if(strcmp($1, "-") == 0) { strcpy($$, $1); strcat($$, $2); }
+															  else { strcpy($$, $2); } 
+															  } }
 					;
 term				: number								{ ; }
 					| identifier							{ ; }
@@ -204,6 +209,14 @@ char* getPos(char* str) {
 char* getVectorFuncs() {
 	char vecFuncs[2048];
 	vecFuncs[0] = '\0';
+
+	strcat(vecFuncs, "int* vectorsToFree[1024];\n");
+	strcat(vecFuncs, "int vecsToFreeIdx = 0;\n");
+	strcat(vecFuncs, "void freeVectors() {\n");
+	strcat(vecFuncs, "\tint sum = 0;\n");
+	strcat(vecFuncs, "\tfor(int i=0; i<vecsToFreeIdx; i++) { free(vectorsToFree[i]); }\n");
+	strcat(vecFuncs, "}\n\n");
+
 	strcat(vecFuncs, "void vectorGetScalar(int* arr, int size, int val) {\n");
 	strcat(vecFuncs, "\tfor(int i=0; i<size; i++) {\n");
 	strcat(vecFuncs, "\t\tarr[i] = val;\n");
@@ -218,6 +231,7 @@ char* getVectorFuncs() {
 
 	strcat(vecFuncs, "int* vectorsIndexing(int* arr, int size, int* arr2) {\n");
 	strcat(vecFuncs, "\tint* tmp = malloc(sizeof(int)*size);\n");
+	strcat(vecFuncs, "\tvectorsToFree[vecsToFreeIdx++] = tmp;\n");
 	strcat(vecFuncs, "\tfor(int i=0; i<size; i++) {\n");
 	strcat(vecFuncs, "\t\ttmp[i] = arr[arr2[i]];\n");
 	strcat(vecFuncs, "\t}\n");
@@ -226,6 +240,7 @@ char* getVectorFuncs() {
 
 	strcat(vecFuncs, "int* vectorOpScalar(int* arr, int size, int scl, char op) {\n");
 	strcat(vecFuncs, "\tint* tmp = malloc(sizeof(int)*size);\n");
+	strcat(vecFuncs, "\tvectorsToFree[vecsToFreeIdx++] = tmp;\n");
 	strcat(vecFuncs, "\tif(op == '+') { for(int i=0; i<size; i++) tmp[i] = arr[i] + scl; }\n");
 	strcat(vecFuncs, "\telse if(op == '-') { for(int i=0; i<size; i++) tmp[i] = arr[i] - scl; }\n");
 	strcat(vecFuncs, "\telse if(op == '*') { for(int i=0; i<size; i++) tmp[i] = arr[i] * scl; }\n");
@@ -235,6 +250,7 @@ char* getVectorFuncs() {
 
 	strcat(vecFuncs, "int* vectorOpVector(int* arr, int size, int* arr2, char op) {\n");
 	strcat(vecFuncs, "\tint* tmp = malloc(sizeof(int)*size);\n");
+	strcat(vecFuncs, "\tvectorsToFree[vecsToFreeIdx++] = tmp;\n");
 	strcat(vecFuncs, "\tif(op == '+') { for(int i=0; i<size; i++) tmp[i] = arr[i] + arr2[i]; }\n");
 	strcat(vecFuncs, "\telse if(op == '-') { for(int i=0; i<size; i++) tmp[i] = arr[i] - arr2[i]; }\n");
 	strcat(vecFuncs, "\telse if(op == '*') { for(int i=0; i<size; i++) tmp[i] = arr[i] * arr2[i]; }\n");
@@ -257,14 +273,15 @@ char* getVectorFuncs() {
 	strcat(vecFuncs, "\tprintf(\"]\\n\");\n");
 	strcat(vecFuncs, "}\n\n");
 
-	fprintf(yyout, "%s", vecFuncs);
+	FILE* header_file = fopen("vector_functions.h", "w");
+	fprintf(header_file, "// Author: Barak Daniel\n");
+	fprintf(header_file, "// Project: vcc compiler\n");
+	fprintf(header_file, "#include <stdio.h>\n");
+	fprintf(header_file, "#include <stdlib.h>\n\n");
+	fprintf(header_file, "%s", vecFuncs);
 }
 
-int main (int argc, char** argv) {
-	// #ifdef YYDEBUG
-	// yydebug = 1;
-	// #endif
-	
+int main (int argc, char** argv) {	
 	yyin = fopen(argv[1], "r");
 	if(yyin == NULL) {
 		printf("Could not open source code from '%s'\n", argv[1]);
@@ -279,6 +296,7 @@ int main (int argc, char** argv) {
 
 	fprintf(yyout, "#include <stdio.h>\n");
 	fprintf(yyout, "#include <stdlib.h>\n\n");
+	fprintf(yyout, "#include \"vector_functions.h\"\n\n");
 
 	getVectorFuncs();
 	
@@ -290,6 +308,8 @@ int main (int argc, char** argv) {
 	yyparse ( );
 	
 	fprintf(yyout, "/* End of your source code translation */\n\n");
+
+	fprintf(yyout, "\tfreeVectors();\n");
 	fprintf(yyout, "\treturn 0;\n}");
 
 	return 0;
