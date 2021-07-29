@@ -1,12 +1,12 @@
 # Vector-Language-Compiler
 
 ## Description:
-Course name: Automats and compilation.
-This is the course final project, building a compiler from vector language to a c file.
-The compiler built with the usage of Bison and Flex.
+	Course name: Automats and compilation.
+	This is the course final project, building a compiler from vector language to a c file.
+	The compiler built with the usage of Bison and Flex.
 
 ## Vector Language
-Please refer to the pdf file in the repositry, file name is vlang.pdf .
+	Please refer to the pdf file in the repositry, file name is vlang.pdf .
 
 ## Guide to run the compiler
 	1	- Use the "make" command to compile the file and generate the "vcc" compiler 
