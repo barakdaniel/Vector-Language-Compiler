@@ -1,6 +1,6 @@
 # Vector-Language-Compiler
 
-## Description:
+## Description
 	Course name: Automats and compilation.
 	This is the course final project, building a compiler from vector language to a c file.
 	The compiler built with the usage of Bison and Flex.
