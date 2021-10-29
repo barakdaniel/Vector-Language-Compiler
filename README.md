@@ -26,6 +26,3 @@
 	The compiler creates header file named "vector_functions.h"
 	please make sure you are compiling the output file when you have
 	the header file in the same directory. 
-
-
-Thank you for reading.
